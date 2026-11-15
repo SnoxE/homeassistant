@@ -1,0 +1,44 @@
+- id: bedroom_afternoon
+  name: "Bedroom: Afternoon (80%, 3300K)"
+  icon: mdi:weather-partly-cloudy
+  entities:
+    light.bedroom_bedside_lamps:
+      state: "on"
+      brightness: 204
+      color_temp_kelvin: 3300
+
+- id: bedroom_evening
+  name: "Bedroom: Evening (50%, 2700K)"
+  icon: mdi:weather-sunset
+  entities:
+    light.bedroom_bedside_lamps:
+      state: "on"
+      brightness: 128
+      color_temp_kelvin: 2700
+
+- id: bedroom_reading
+  name: "Bedroom: Reading (80%, 3500K)"
+  icon: mdi:book-open-page-variant
+  entities:
+    light.bedroom_bedside_lamps:
+      state: "on"
+      brightness: 204
+      color_temp_kelvin: 3500
+
+- id: bedroom_relax
+  name: "Bedroom: Relax (20%, 2200K)"
+  icon: mdi:sofa-single
+  entities:
+    light.bedroom_bedside_lamps:
+      state: "on"
+      brightness: 51
+      color_temp_kelvin: 2200
+
+- id: bedroom_night_mode
+  name: "Bedroom: Night Mode (3%, 2200K)"
+  icon: mdi:weather-night
+  entities:
+    light.bedroom_bedside_lamps:
+      state: "on"
+      brightness: 8
+      color_temp_kelvin: 2200

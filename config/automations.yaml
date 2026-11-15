@@ -1,0 +1,349 @@
+# ==============================================================================
+# BEDROOM AUTOMATIONS - IKEA BILRESA Dual Button Remote (ÅRSTID Bedside Lamps)
+# ==============================================================================
+
+- id: bedroom_bilresa_dual_button_1_handler
+  alias: "Bedroom - BILRESA Button I (Top): Afternoon / Combo Mode Toggle / Rotate Scenes / Hold Ramp Up"
+  description: "Single click: Afternoon (80%, 3300K) | Simultaneous I+O click: Toggle Hold Mode (Brightness <-> Color Temp) | Double click: Rotate Evening -> Reading -> Relax | Hold: Hardware smooth brighten or cooler color temp"
+  triggers:
+    - trigger: state
+      entity_id: event.bilresa_dual_button_button_1
+      not_from:
+        - unavailable
+        - unknown
+  conditions:
+    - condition: template
+      value_template: "{{ state_attr('event.bilresa_dual_button_button_1', 'event_type') in ['multi_press_1', 'multi_press_2', 'long_press'] }}"
+  actions:
+    - variables:
+        ev_type: "{{ state_attr('event.bilresa_dual_button_button_1', 'event_type') }}"
+    - choose:
+        # 1. Single Click -> Check for simultaneous I+O combo (within 350ms); otherwise Afternoon Scene (80%, 3300K)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_1' }}"
+          sequence:
+            - variables:
+                b2_already_pressed: >-
+                  {{ state_attr('event.bilresa_dual_button_button_2', 'event_type') == 'multi_press_1'
+                     and (as_timestamp(now()) - as_timestamp(states('event.bilresa_dual_button_button_2'), 0)) < 0.45 }}
+            - if:
+                - condition: template
+                  value_template: "{{ not b2_already_pressed }}"
+              then:
+                - wait_for_trigger:
+                    - trigger: state
+                      entity_id: event.bilresa_dual_button_button_2
+                  timeout:
+                    milliseconds: 350
+            - if:
+                - condition: template
+                  value_template: "{{ b2_already_pressed or wait.completed }}"
+              then:
+                # Simultaneous I + O Click -> Toggle Hold Mode (Brightness <-> Color Temperature)
+                - action: input_select.select_next
+                  target:
+                    entity_id: input_select.bedroom_hold_mode
+                  data:
+                    cycle: true
+                # Subtle visual confirmation pulse if lamp is on
+                - if:
+                    - condition: state
+                      entity_id: light.bedroom_bedside_lamps
+                      state: "on"
+                  then:
+                    - variables:
+                        cur_pct: "{{ ((state_attr('light.bedroom_bedside_lamps', 'brightness') | int(128)) * 100 / 255) | round(0) }}"
+                        dip_pct: "{{ [cur_pct - 18, 25] | max if cur_pct > 25 else cur_pct + 20 }}"
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: "{{ dip_pct }}"
+                        transition: 0.12
+                    - delay:
+                        milliseconds: 160
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: "{{ cur_pct }}"
+                        transition: 0.12
+              else:
+                # Normal Single Click on I -> Afternoon Scene (80%, 3300K)
+                - action: light.turn_on
+                  target:
+                    entity_id: light.bedroom_bedside_lamps
+                  data:
+                    brightness_pct: 80
+                    color_temp_kelvin: 3300
+                    transition: 0.4
+
+        # 2. Double Click -> Rotate Scenes: Evening (2700K, 50%) -> Reading (3500K, 80%) -> Relax (2200K, 20%)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_2' }}"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.bedroom_scene_rotation
+                      state: "Evening (2700K, 50%)"
+                  sequence:
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: 50
+                        color_temp_kelvin: 2700
+                        transition: 0.4
+                    - action: input_select.select_option
+                      target:
+                        entity_id: input_select.bedroom_scene_rotation
+                      data:
+                        option: "Reading (3500K, 80%)"
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.bedroom_scene_rotation
+                      state: "Reading (3500K, 80%)"
+                  sequence:
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: 80
+                        color_temp_kelvin: 3500
+                        transition: 0.4
+                    - action: input_select.select_option
+                      target:
+                        entity_id: input_select.bedroom_scene_rotation
+                      data:
+                        option: "Relax (2200K, 20%)"
+              default:
+                - action: light.turn_on
+                  target:
+                    entity_id: light.bedroom_bedside_lamps
+                  data:
+                    brightness_pct: 20
+                    color_temp_kelvin: 2200
+                    transition: 0.4
+                - action: input_select.select_option
+                  target:
+                    entity_id: input_select.bedroom_scene_rotation
+                  data:
+                    option: "Evening (2700K, 50%)"
+
+        # 3. Hold (long_press) -> Native hardware smooth ramp (Brightness up to 100% OR Color Temp up to 4500K)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'long_press' }}"
+          sequence:
+            - choose:
+                # Mode A: Color Temperature Mode (Ramp warmer -> cooler up to 4500K)
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.bedroom_hold_mode
+                      state: "Color Temperature"
+                  sequence:
+                    - variables:
+                        start_k: "{{ state_attr('light.bedroom_bedside_lamps', 'color_temp_kelvin') | int(2700) }}"
+                        max_k: 4500
+                        ramp_rate_k: 1000.0
+                        duration: "{{ [((max_k - start_k) / ramp_rate_k) | round(2), 0.2] | max }}"
+                        start_ts: "{{ as_timestamp(now()) }}"
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        color_temp_kelvin: "{{ max_k }}"
+                        transition: "{{ duration }}"
+                    - wait_for_trigger:
+                        - trigger: state
+                          entity_id: event.bilresa_dual_button_button_1
+                      timeout:
+                        milliseconds: "{{ (duration * 1000) | int }}"
+                    - if:
+                        - condition: template
+                          value_template: "{{ wait.completed }}"
+                      then:
+                        - variables:
+                            elapsed: "{{ [as_timestamp(now()) - start_ts, 0] | max }}"
+                            stop_k: "{{ [[(start_k + (elapsed * ramp_rate_k)) | round(0), max_k] | min, 2202] | max }}"
+                        - action: light.turn_on
+                          target:
+                            entity_id: light.bedroom_bedside_lamps
+                          data:
+                            color_temp_kelvin: "{{ stop_k }}"
+                            transition: 0
+              # Mode B (Default): Brightness Mode (Ramp up to 100%)
+              default:
+                - variables:
+                    start_pct: "{{ ((state_attr('light.bedroom_bedside_lamps', 'brightness') | int(0)) * 100 / 255) | round(0) }}"
+                    ramp_rate: 45.0
+                    duration: "{{ [((100 - start_pct) / ramp_rate) | round(2), 0.2] | max }}"
+                    start_ts: "{{ as_timestamp(now()) }}"
+                - action: light.turn_on
+                  target:
+                    entity_id: light.bedroom_bedside_lamps
+                  data:
+                    brightness_pct: 100
+                    transition: "{{ duration }}"
+                - wait_for_trigger:
+                    - trigger: state
+                      entity_id: event.bilresa_dual_button_button_1
+                  timeout:
+                    milliseconds: "{{ (duration * 1000) | int }}"
+                - if:
+                    - condition: template
+                      value_template: "{{ wait.completed }}"
+                  then:
+                    - variables:
+                        elapsed: "{{ [as_timestamp(now()) - start_ts, 0] | max }}"
+                        stop_pct: "{{ [[(start_pct + (elapsed * ramp_rate)) | round(0), 100] | min, 2] | max }}"
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: "{{ stop_pct }}"
+                        transition: 0
+  mode: restart
+
+- id: bedroom_bilresa_dual_button_2_handler
+  alias: "Bedroom - BILRESA Button O (Bottom): Turn Off / Night Mode / Hold Ramp Down"
+  description: "Single click: Turn off bedside lamps (unless I+O combo) | Double click: Night Mode (3%, 2200K) | Hold: Hardware smooth dim or warmer color temp"
+  triggers:
+    - trigger: state
+      entity_id: event.bilresa_dual_button_button_2
+      not_from:
+        - unavailable
+        - unknown
+  conditions:
+    - condition: template
+      value_template: "{{ state_attr('event.bilresa_dual_button_button_2', 'event_type') in ['multi_press_1', 'multi_press_2', 'long_press'] }}"
+  actions:
+    - variables:
+        ev_type: "{{ state_attr('event.bilresa_dual_button_button_2', 'event_type') }}"
+    - choose:
+        # 1. Single Click -> Suppress if simultaneous I+O combo (within 350ms); otherwise Turn Off bedside lamps (0.8s)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_1' }}"
+          sequence:
+            - variables:
+                b1_already_pressed: >-
+                  {{ state_attr('event.bilresa_dual_button_button_1', 'event_type') == 'multi_press_1'
+                     and (as_timestamp(now()) - as_timestamp(states('event.bilresa_dual_button_button_1'), 0)) < 0.45 }}
+            - if:
+                - condition: template
+                  value_template: "{{ not b1_already_pressed }}"
+              then:
+                - wait_for_trigger:
+                    - trigger: state
+                      entity_id: event.bilresa_dual_button_button_1
+                  timeout:
+                    milliseconds: 350
+                - if:
+                    - condition: template
+                      value_template: "{{ not wait.completed }}"
+                  then:
+                    - action: light.turn_off
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        transition: 0.8
+
+        # 2. Double Click -> Night Mode on bedside lamps (3%, 2200K)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_2' }}"
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.bedroom_bedside_lamps
+              data:
+                brightness_pct: 3
+                color_temp_kelvin: 2200
+                transition: 0.5
+
+        # 3. Hold (long_press) -> Native hardware smooth ramp down (Brightness down to 2% OR Color Temp down to 2202K)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'long_press' }}"
+          sequence:
+            - choose:
+                # Mode A: Color Temperature Mode (Ramp cooler -> warmer down to 2202K)
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.bedroom_hold_mode
+                      state: "Color Temperature"
+                  sequence:
+                    - variables:
+                        start_k: "{{ state_attr('light.bedroom_bedside_lamps', 'color_temp_kelvin') | int(3300) }}"
+                        min_k: 2202
+                        ramp_rate_k: 1000.0
+                        duration: "{{ [((start_k - min_k) / ramp_rate_k) | round(2), 0.2] | max }}"
+                        start_ts: "{{ as_timestamp(now()) }}"
+                    - if:
+                        - condition: template
+                          value_template: "{{ start_k > min_k }}"
+                      then:
+                        - action: light.turn_on
+                          target:
+                            entity_id: light.bedroom_bedside_lamps
+                          data:
+                            color_temp_kelvin: "{{ min_k }}"
+                            transition: "{{ duration }}"
+                        - wait_for_trigger:
+                            - trigger: state
+                              entity_id: event.bilresa_dual_button_button_2
+                          timeout:
+                            milliseconds: "{{ (duration * 1000) | int }}"
+                        - if:
+                            - condition: template
+                              value_template: "{{ wait.completed }}"
+                          then:
+                            - variables:
+                                elapsed: "{{ [as_timestamp(now()) - start_ts, 0] | max }}"
+                                stop_k: "{{ [[(start_k - (elapsed * ramp_rate_k)) | round(0), 4500] | min, min_k] | max }}"
+                            - action: light.turn_on
+                              target:
+                                entity_id: light.bedroom_bedside_lamps
+                              data:
+                                color_temp_kelvin: "{{ stop_k }}"
+                                transition: 0
+              # Mode B (Default): Brightness Mode (Ramp down to 2%)
+              default:
+                - variables:
+                    start_pct: "{{ ((state_attr('light.bedroom_bedside_lamps', 'brightness') | int(0)) * 100 / 255) | round(0) }}"
+                    ramp_rate: 45.0
+                    duration: "{{ [((start_pct - 2) / ramp_rate) | round(2), 0.2] | max }}"
+                    start_ts: "{{ as_timestamp(now()) }}"
+                - if:
+                    - condition: template
+                      value_template: "{{ start_pct > 2 }}"
+                  then:
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.bedroom_bedside_lamps
+                      data:
+                        brightness_pct: 2
+                        transition: "{{ duration }}"
+                    - wait_for_trigger:
+                        - trigger: state
+                          entity_id: event.bilresa_dual_button_button_2
+                      timeout:
+                        milliseconds: "{{ (duration * 1000) | int }}"
+                    - if:
+                        - condition: template
+                          value_template: "{{ wait.completed }}"
+                      then:
+                        - variables:
+                            elapsed: "{{ [as_timestamp(now()) - start_ts, 0] | max }}"
+                            stop_pct: "{{ [[(start_pct - (elapsed * ramp_rate)) | round(0), 100] | min, 2] | max }}"
+                        - action: light.turn_on
+                          target:
+                            entity_id: light.bedroom_bedside_lamps
+                          data:
+                            brightness_pct: "{{ stop_pct }}"
+                            transition: 0
+  mode: restart

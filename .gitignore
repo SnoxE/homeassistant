@@ -1,0 +1,20 @@
+# Home Assistant sensitive & runtime files
+config/secrets.yaml
+config/*.db
+config/*.db-shm
+config/*.db-wal
+config/*.log
+config/*.log.*
+config/.cloud/
+config/.storage/
+config/.HA_VERSION
+config/deps/
+config/tts/
+config/backups/
+
+# Matter & OTBR runtime data
+data/
+
+# Local environment & private server hardware docs
+.env
+konfiguracja_serwera_*.md

@@ -1,0 +1,38 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Helpers for BILRESA Dual-Button scene rotation and hold mode
+input_select:
+  bedroom_scene_rotation:
+    name: "Bedroom - Scene Rotation"
+    options:
+      - "Evening (2700K, 50%)"
+      - "Reading (3500K, 80%)"
+      - "Relax (2200K, 20%)"
+    initial: "Evening (2700K, 50%)"
+    icon: mdi:palette-swatch-outline
+
+  bedroom_hold_mode:
+    name: "Bedroom - BILRESA Hold Mode"
+    options:
+      - "Brightness"
+      - "Color Temperature"
+    initial: "Brightness"
+    icon: mdi:tune-vertical
+
+# Light group for the ÅRSTID Bedside Lamps
+light:
+  - platform: group
+    unique_id: group_bedroom_bedside_lamps
+    name: "Bedroom Bedside Lamps"
+    entities:
+      - light.kajplats_e27_ws_globe_1055lm
+      # Add second ÅRSTID bedside bulb entity_id here once paired

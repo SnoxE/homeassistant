@@ -1,0 +1,55 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    environment:
+      - TZ=${TZ:-Europe/Warsaw}
+    volumes:
+      - ./config:/config
+      - /run/dbus:/run/dbus:ro
+
+  # Python Matter Server (host network mode + Thread wpan0 interface)
+  matter-server:
+    container_name: matter-server
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - homeassistant
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      - TZ=${TZ:-Europe/Warsaw}
+    volumes:
+      - ./data/matter:/data
+      - /run/dbus:/run/dbus:ro
+    command: --storage-path /data --primary-interface ${BACKBONE_IF:-wlan0}
+
+  # OpenThread Border Router (SONOFF ZBDongle-E OpenThread RCP)
+  otbr:
+    container_name: otbr
+    image: ghcr.io/ownbee/hass-otbr-docker:latest
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    depends_on:
+      - homeassistant
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    environment:
+      - TZ=${TZ:-Europe/Warsaw}
+      - BACKBONE_IF=${BACKBONE_IF:-wlan0}
+      - DEVICE=/dev/ttyUSB0
+      - BAUDRATE=460800
+      - FLOW_CONTROL=0
+      - FIREWALL=0
+      - NAT64=1
+    devices:
+      - "${ZBDONGLE_DEVICE:-/dev/ttyUSB0}:/dev/ttyUSB0"
+      - "/dev/net/tun:/dev/net/tun"
+    volumes:
+      - ./data/otbr:/data
