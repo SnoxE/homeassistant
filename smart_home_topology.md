@@ -10,9 +10,9 @@ Technical, network, and logical documentation for the bedroom lighting system ba
 | :--- | :--- | :--- | :--- | :--- |
 | **Server / Host** | Linux Host Server (x86_64, SSD, battery UPS) | 230V AC (built-in battery UPS) | **Application Host** (Home Assistant, Matter Server, OTBR) | Desk / Technical cabinet |
 | **Radio Adapter** | SONOFF ZBDongle-E (Silicon Labs EFR32MG21) | USB (shielded USB 2.0 extension cable) | **Thread Border Router (RCP)** | Positioned away from host chassis |
-| **Bulb 1** | IKEA KAJPLATS E27 (White Spectrum, 1055 lm) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Left bedside lamp (ÅRSTID) |
-| **Bulb 2** | IKEA KAJPLATS E27 (White Spectrum, 1055 lm) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Right bedside lamp (ÅRSTID) |
-| **Bulb 3 (Planned)** | IKEA KAJPLATS E27 (White Spectrum, 1055 lm) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Floor standing lamp (separate control plan) |
+| **Bulb 1** | IKEA KAJPLATS E27 (`light.kajplats_e27_ws_globe_1055lm`) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Bedside lamp 1 (ÅRSTID) |
+| **Bulb 2** | IKEA KAJPLATS E27 (`light.kajplats_e27_ws_globe_1055lm_2`) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Bedside lamp 2 (ÅRSTID) |
+| **Bulb 3** | IKEA KAJPLATS E27 RGB (`light.sypialnia_floor_lamp_corner`) | 230V AC (continuous mains power) | **Thread Router (FTD - Mesh Repeater)** | Corner floor standing lamp |
 | **Remote 1** | IKEA BILRESA (Scroll wheel) | CR2032 coin-cell battery | **Sleepy End Device (SED)** | Nightstand / Bedside |
 | **Remote 2** | IKEA BILRESA (Dual button: I / O) | CR2032 coin-cell battery | **Sleepy End Device (SED)** | **Mobile / Free-roaming** (bed, desk, couch) |
 

@@ -10,7 +10,8 @@ Docker Compose stack for **Home Assistant**, **OpenThread Border Router (`otbr`)
 - [`config/configuration.yaml`](./config/configuration.yaml) — Home Assistant configuration (`light.bedroom_bedside_lamps`, `input_select.bedroom_scene_rotation`, `input_select.bedroom_hold_mode`).
 - [`config/scenes.yaml`](./config/scenes.yaml) — Bedroom lighting scenes (`Afternoon`, `Evening`, `Reading`, `Relax`, `Night Mode`).
 - [`config/automations.yaml`](./config/automations.yaml) — IKEA BILRESA Dual-Button automations (single-click scenes, simultaneous `I+O` hold-mode toggle, stepless hardware brightness & color-temperature fades).
-- [`topologia_systemu_smart_home.md`](./topologia_systemu_smart_home.md) — Smart home device and automation topology.
+- [`smart_home_topology.md`](./smart_home_topology.md) — Smart home device and automation topology.
+- [`floor_lamp_rgb_ideas.md`](./floor_lamp_rgb_ideas.md) — Concepts for integrating the corner RGB floor lamp with the BILRESA remote.
 
 ---
 

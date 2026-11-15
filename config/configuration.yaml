@@ -35,7 +35,7 @@ light:
     name: "Bedroom Bedside Lamps"
     entities:
       - light.kajplats_e27_ws_globe_1055lm
-      # Add second ÅRSTID bedside bulb entity_id here once paired
+      - light.kajplats_e27_ws_globe_1055lm_2
 
 # Host Server Hardware Monitoring (Intel RAPL Power & CPU Temp)
 command_line:
@@ -59,6 +59,17 @@ command_line:
       scan_interval: 30
 
 template:
+  - button:
+      - name: "Turn Off All Lights"
+        unique_id: turn_off_all_apartment_lights
+        icon: mdi:lightbulb-group-off-outline
+        press:
+          - action: light.turn_off
+            target:
+              entity_id: all
+            data:
+              transition: 0.8
+
   - sensor:
       - name: "Server Total Power"
         unique_id: server_total_power_watts
