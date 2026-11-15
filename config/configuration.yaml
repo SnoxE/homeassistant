@@ -36,3 +36,46 @@ light:
     entities:
       - light.kajplats_e27_ws_globe_1055lm
       # Add second ÅRSTID bedside bulb entity_id here once paired
+
+# Host Server Hardware Monitoring (Intel RAPL Power & CPU Temp)
+command_line:
+  - sensor:
+      name: "Server CPU Power"
+      unique_id: server_cpu_power_watts
+      command: >-
+        sh -c 'a=$(cat /sys/class/powercap/intel-rapl:0/energy_uj); sleep 1; b=$(cat /sys/class/powercap/intel-rapl:0/energy_uj); awk "BEGIN {d=$b-$a; if (d>=0) printf \"%.2f\", d/1000000; else printf \"2.50\"}"'
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      scan_interval: 30
+
+  - sensor:
+      name: "Server CPU Temperature"
+      unique_id: server_cpu_temperature_c
+      command: "awk '{printf \"%.1f\", $1 / 1000}' /sys/class/thermal/thermal_zone0/temp"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      scan_interval: 30
+
+template:
+  - sensor:
+      - name: "Server Total Power"
+        unique_id: server_total_power_watts
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: mdi:server-network
+        state: >-
+          {{ (states('sensor.server_cpu_power') | float(2.5) + 6.0) | round(2) }}
+
+# Cumulative Energy (kWh) for Home Assistant Energy Dashboard
+sensor:
+  - platform: integration
+    source: sensor.server_total_power
+    name: "Server Energy Consumption"
+    unique_id: server_energy_consumption_kwh
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3
