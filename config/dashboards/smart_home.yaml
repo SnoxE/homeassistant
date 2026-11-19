@@ -1,0 +1,230 @@
+title: Smart Home
+views:
+  - title: Home
+    path: home
+    icon: mdi:home-automation
+    type: sections
+    max_columns: 3
+    sections:
+      # ========================================================================
+      # SECTION 1: BEDROOM LIGHTING (Live Sliders on Tile Cards)
+      # ========================================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Bedroom Lighting
+            heading_style: title
+            icon: mdi:bed-king-outline
+
+          # Master Bedside Group (Both ÅRSTID Lamps)
+          - type: tile
+            entity: light.bedroom_bedside_lamps
+            name: Bedside Lamps (Both ÅRSTID)
+            icon: mdi:lamps
+            color: amber
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+          # Individual Left & Right ÅRSTID Bedside Lamps
+          - type: tile
+            entity: light.kajplats_e27_ws_globe_1055lm
+            name: Bedside Lamp 1
+            icon: mdi:lamp
+            color: amber
+            features:
+              - type: light-brightness
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: light.kajplats_e27_ws_globe_1055lm_2
+            name: Bedside Lamp 2
+            icon: mdi:lamp
+            color: amber
+            features:
+              - type: light-brightness
+            grid_options:
+              columns: 6
+
+          # Corner RGB Floor Standing Lamp
+          - type: tile
+            entity: light.sypialnia_floor_lamp_corner
+            name: Corner Floor Lamp (RGB)
+            icon: mdi:floor-lamp
+            color: deep-purple
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+      # ========================================================================
+      # SECTION 2: QUICK ACTIONS & LIGHTING SCENES
+      # ========================================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Quick Actions & Scenes
+            heading_style: title
+            icon: mdi:palette-swatch-outline
+
+          # Master Turn Off All Apartment Lights Button
+          - type: tile
+            entity: button.turn_off_all_lights
+            name: Turn Off All Apartment Lights
+            icon: mdi:lightbulb-group-off-outline
+            color: red
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: full
+
+          # Bedroom Scenes
+          - type: tile
+            entity: scene.bedroom_afternoon_80_3300k
+            name: Afternoon (80%, 3300K)
+            icon: mdi:weather-partly-cloudy
+            color: amber
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_evening_50_2700k
+            name: Evening (50%, 2700K)
+            icon: mdi:weather-sunset
+            color: deep-orange
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_reading_80_3500k
+            name: Reading (80%, 3500K)
+            icon: mdi:book-open-page-variant
+            color: yellow
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_relax_20_2200k
+            name: Relax (20%, 2200K)
+            icon: mdi:sofa-single
+            color: orange
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_night_mode_3_2200k
+            name: Night Mode (3%, 2200K)
+            icon: mdi:weather-night
+            color: indigo
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: full
+
+      # ========================================================================
+      # SECTION 3: BILRESA REMOTE & SERVER ENERGY
+      # ========================================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: BILRESA Remote
+            heading_style: title
+            icon: mdi:remote
+
+          - type: tile
+            entity: input_select.bedroom_hold_mode
+            name: Remote Hold Mode (I+O)
+            icon: mdi:tune-vertical
+            color: cyan
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+
+          - type: tile
+            entity: input_select.bedroom_scene_rotation
+            name: Next Double-Click Scene
+            icon: mdi:palette-swatch-outline
+            color: teal
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_battery
+            name: BILRESA Battery
+            icon: mdi:battery-high
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_voltage
+            name: BILRESA Voltage
+            icon: mdi:flash-triangle-outline
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: heading
+            heading: Host Server & Energy
+            heading_style: title
+            icon: mdi:server-network
+
+          - type: tile
+            entity: sensor.server_total_power
+            name: Server Total Power
+            icon: mdi:flash
+            color: blue
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_cpu_power
+            name: CPU Package Power
+            icon: mdi:cpu-64-bit
+            color: light-blue
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_cpu_temperature
+            name: CPU Temperature
+            icon: mdi:thermometer
+            color: orange
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_energy_consumption
+            name: Total Energy Used
+            icon: mdi:lightning-bolt-circle
+            color: purple
+            grid_options:
+              columns: 6
+
+          - type: history-graph
+            title: Server Power & Temperature (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.server_total_power
+                name: Total Power (W)
+              - entity: sensor.server_cpu_power
+                name: CPU Power (W)
+              - entity: sensor.server_cpu_temperature
+                name: CPU Temp (°C)
+            grid_options:
+              columns: full
