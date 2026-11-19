@@ -81,6 +81,18 @@ views:
             grid_options:
               columns: full
 
+          # Single Unified Card for Sunrise Wake-Up Alarm (Toggle + Inline Time Picker)
+          - type: entities
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - entity: input_boolean.bedroom_wake_up_enabled
+                name: Wake-Up Light Alarm (3m Sunrise)
+              - entity: input_datetime.bedroom_wake_up_time
+                name: Alarm Time
+            grid_options:
+              columns: full
+
       # ----------------------------------------------------------------------
       # SECTION 2: OFFICE AREA + QUICK ACTIONS & REMOTE
       # ----------------------------------------------------------------------

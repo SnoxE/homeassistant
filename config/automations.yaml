@@ -417,3 +417,53 @@
                 color_temp_kelvin: 2200
                 transition: 0.5
   mode: restart
+
+- id: bedroom_sunrise_wake_up_alarm
+  alias: "Bedroom - Sunrise Wake-Up Light (0% to 50% at 2202K over 3 Minutes)"
+  description: "At the set alarm time (when enabled), smoothly fades both ÅRSTID lamps and the corner floor lamp from 1% warmest amber (2202K) up to 50% over 3 minutes (180s). Stops immediately if alarm is turned off or lights are turned off via BILRESA remote."
+  triggers:
+    - trigger: time
+      at: input_datetime.bedroom_wake_up_time
+  conditions:
+    - condition: state
+      entity_id: input_boolean.bedroom_wake_up_enabled
+      state: "on"
+  actions:
+    # Step 0: Start from lowest brightness (1%) and warmest color temperature (2202K)
+    - action: light.turn_on
+      target:
+        entity_id:
+          - light.bedroom_bedside_lamps
+          - light.sypialnia_floor_lamp_corner
+      data:
+        brightness_pct: 1
+        color_temp_kelvin: 2202
+        transition: 1
+    - delay:
+        seconds: 2
+    # 18 smooth hardware-interpolated segments of 10s each = 180 seconds (3 minutes) up to 50%
+    - repeat:
+        while:
+          - condition: template
+            value_template: "{{ repeat.index <= 18 }}"
+          - condition: state
+            entity_id: input_boolean.bedroom_wake_up_enabled
+            state: "on"
+          - condition: state
+            entity_id: light.bedroom_bedside_lamps
+            state: "on"
+        sequence:
+          - variables:
+              target_pct: "{{ (1 + (repeat.index * 49 / 18)) | round(0) }}"
+          - action: light.turn_on
+            target:
+              entity_id:
+                - light.bedroom_bedside_lamps
+                - light.sypialnia_floor_lamp_corner
+            data:
+              brightness_pct: "{{ target_pct }}"
+              color_temp_kelvin: 2202
+              transition: 9.5
+          - delay:
+              seconds: 10
+  mode: restart

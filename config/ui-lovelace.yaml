@@ -1,0 +1,352 @@
+title: Smart Home
+views:
+  # ==========================================================================
+  # MAIN VIEW: BEDROOM, OFFICE, QUICK ACTIONS & REMOTE
+  # ==========================================================================
+  - title: Home
+    path: home
+    icon: mdi:home-automation
+    type: sections
+    max_columns: 2
+    sections:
+      # ----------------------------------------------------------------------
+      # SECTION 1 (TOP): BEDROOM AREA (Climate + ÅRSTID + Floor Lamp + Alarm)
+      # ----------------------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Bedroom
+            heading_style: title
+            icon: mdi:bed-king-outline
+
+          # Bedroom Temperature & Humidity Sensors (TIMMERFLOTTE)
+          - type: tile
+            entity: sensor.temp_humid_sensor_temperature
+            name: Bedroom Temperature
+            icon: mdi:thermometer
+            color: orange
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_humidity
+            name: Bedroom Humidity
+            icon: mdi:water-percent
+            color: light-blue
+            grid_options:
+              columns: 6
+
+          # Master ÅRSTID Group (Bedside + Desk)
+          - type: tile
+            entity: light.bedroom_bedside_lamps
+            name: ÅRSTID Lamps (Both)
+            icon: mdi:lamps
+            color: amber
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+          # Left: ÅRSTID Bedside | Right: ÅRSTID Desk
+          - type: tile
+            entity: light.kajplats_e27_ws_globe_1055lm_2
+            name: ÅRSTID Bedside
+            icon: mdi:lamp
+            color: amber
+            features:
+              - type: light-brightness
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: light.kajplats_e27_ws_globe_1055lm
+            name: ÅRSTID Desk
+            icon: mdi:desk-lamp
+            color: amber
+            features:
+              - type: light-brightness
+            grid_options:
+              columns: 6
+
+          # Corner RGB Floor Standing Lamp
+          - type: tile
+            entity: light.sypialnia_floor_lamp_corner
+            name: Corner Floor Lamp (RGB)
+            icon: mdi:floor-lamp
+            color: deep-purple
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+          # Single Unified Card for Sunrise Wake-Up Alarm (Toggle + Inline Time Picker)
+          - type: entities
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - entity: input_boolean.bedroom_wake_up_enabled
+                name: Wake-Up Light Alarm (3m Sunrise)
+              - entity: input_datetime.bedroom_wake_up_time
+                name: Alarm Time
+            grid_options:
+              columns: full
+
+      # ----------------------------------------------------------------------
+      # SECTION 2: OFFICE AREA + QUICK ACTIONS & REMOTE
+      # ----------------------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Office
+            heading_style: title
+            icon: mdi:desk
+
+          - type: tile
+            entity: light.office_kajplats_e27_1521lm_office
+            name: Office Light (1521lm)
+            icon: mdi:ceiling-light
+            color: amber
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+          - type: heading
+            heading: Quick Actions & Remote
+            heading_style: title
+            icon: mdi:lightning-bolt-outline
+
+          # Master Turn Off All Apartment Lights Button
+          - type: tile
+            entity: button.turn_off_all_lights
+            name: Turn Off All Apartment Lights
+            icon: mdi:lightbulb-group-off-outline
+            color: red
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: full
+
+          # Single Expandable Tile for the 5 ÅRSTID Scenes
+          - type: tile
+            entity: input_select.bedroom_active_scene
+            name: ÅRSTID Lighting Scenes
+            icon: mdi:palette-swatch-outline
+            color: amber
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/arstid-scenes
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+
+          # Side-by-Side (Half Width = 6 Columns each): Remote Hold Mode & Next Double-Click Scene
+          - type: tile
+            entity: input_select.bedroom_hold_mode
+            name: Remote Hold Mode
+            icon: mdi:tune-vertical
+            color: cyan
+            features:
+              - type: select-options
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: input_select.bedroom_scene_rotation
+            name: Next 2x Click Scene
+            icon: mdi:autorenew
+            color: teal
+            features:
+              - type: select-options
+            grid_options:
+              columns: 6
+
+          # Single Collapsed Tile for Server & Diagnostics (Opens Subview on Click)
+          - type: tile
+            entity: sensor.server_total_power
+            name: Host Server & Diagnostics (Tap for Details)
+            icon: mdi:server-network
+            color: blue
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/server
+            grid_options:
+              columns: full
+
+  # ==========================================================================
+  # SUBVIEW 1: ÅRSTID LIGHTING SCENES (Expanded 5-Scene View)
+  # ==========================================================================
+  - title: ÅRSTID Lighting Scenes
+    path: arstid-scenes
+    subview: true
+    type: sections
+    max_columns: 1
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: ÅRSTID Lighting Scenes
+            heading_style: title
+            icon: mdi:palette-swatch-outline
+
+          - type: tile
+            entity: scene.bedroom_afternoon_80_3300k
+            name: Afternoon (80%, 3300K)
+            icon: mdi:weather-partly-cloudy
+            color: amber
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_evening_50_2700k
+            name: Evening (50%, 2700K)
+            icon: mdi:weather-sunset
+            color: deep-orange
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_reading_80_3500k
+            name: Reading (80%, 3500K)
+            icon: mdi:book-open-page-variant
+            color: yellow
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_relax_20_2200k
+            name: Relax (20%, 2200K)
+            icon: mdi:sofa-single
+            color: orange
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: scene.bedroom_night_mode_3_2200k
+            name: Night Mode (3%, 2200K)
+            icon: mdi:weather-night
+            color: indigo
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: full
+
+  # ==========================================================================
+  # SUBVIEW 2: HOST SERVER & DEVICE DIAGNOSTICS (Opened on Tap)
+  # ==========================================================================
+  - title: Host Server & Diagnostics
+    path: server
+    subview: true
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Server Power & Thermal
+            heading_style: title
+            icon: mdi:server-network
+
+          - type: tile
+            entity: sensor.server_total_power
+            name: Server Total Power
+            icon: mdi:flash
+            color: blue
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_cpu_power
+            name: CPU Package Power
+            icon: mdi:cpu-64-bit
+            color: light-blue
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_cpu_temperature
+            name: CPU Temperature
+            icon: mdi:thermometer
+            color: orange
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.server_energy_consumption
+            name: Total Energy Used
+            icon: mdi:lightning-bolt-circle
+            color: purple
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.biurko_szafka_techniczna_dell_e6330_ip_address
+            name: Server Tailscale IP
+            icon: mdi:vpn
+            color: indigo
+            grid_options:
+              columns: full
+
+          - type: history-graph
+            title: Server Power & Temperature (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.server_total_power
+                name: Total Power (W)
+              - entity: sensor.server_cpu_power
+                name: CPU Power (W)
+              - entity: sensor.server_cpu_temperature
+                name: CPU Temp (°C)
+            grid_options:
+              columns: full
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Device Batteries
+            heading_style: title
+            icon: mdi:battery-check-outline
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_battery
+            name: BILRESA Remote Battery
+            icon: mdi:battery-high
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_voltage
+            name: BILRESA Remote Voltage
+            icon: mdi:flash-triangle-outline
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_battery
+            name: Climate Sensor Battery
+            icon: mdi:battery-high
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_battery_voltage
+            name: Climate Sensor Voltage
+            icon: mdi:flash-triangle-outline
+            color: green
+            grid_options:
+              columns: 6
