@@ -39,6 +39,17 @@ input_select:
     initial: "Brightness"
     icon: mdi:tune-vertical
 
+  bedroom_active_scene:
+    name: "ÅRSTID Lighting Scenes"
+    options:
+      - "Afternoon (80%, 3300K)"
+      - "Evening (50%, 2700K)"
+      - "Reading (80%, 3500K)"
+      - "Relax (20%, 2200K)"
+      - "Night Mode (3%, 2200K)"
+    initial: "Afternoon (80%, 3300K)"
+    icon: mdi:palette-swatch-outline
+
 # Light group for the ÅRSTID Bedside Lamps
 light:
   - platform: group

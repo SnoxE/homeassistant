@@ -1,25 +1,45 @@
 title: Smart Home
 views:
+  # ==========================================================================
+  # MAIN VIEW: BEDROOM, OFFICE, QUICK ACTIONS & REMOTE
+  # ==========================================================================
   - title: Home
     path: home
     icon: mdi:home-automation
     type: sections
-    max_columns: 3
+    max_columns: 2
     sections:
-      # ========================================================================
-      # SECTION 1: BEDROOM LIGHTING (Live Sliders on Tile Cards)
-      # ========================================================================
+      # ----------------------------------------------------------------------
+      # SECTION 1 (TOP): BEDROOM AREA (Climate + ÅRSTID + Floor Lamp)
+      # ----------------------------------------------------------------------
       - type: grid
         cards:
           - type: heading
-            heading: Bedroom Lighting
+            heading: Bedroom
             heading_style: title
             icon: mdi:bed-king-outline
 
-          # Master Bedside Group (Both ÅRSTID Lamps)
+          # Bedroom Temperature & Humidity Sensors (TIMMERFLOTTE)
+          - type: tile
+            entity: sensor.temp_humid_sensor_temperature
+            name: Bedroom Temperature
+            icon: mdi:thermometer
+            color: orange
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_humidity
+            name: Bedroom Humidity
+            icon: mdi:water-percent
+            color: light-blue
+            grid_options:
+              columns: 6
+
+          # Master ÅRSTID Group (Bedside + Desk)
           - type: tile
             entity: light.bedroom_bedside_lamps
-            name: Bedside Lamps (Both ÅRSTID)
+            name: ÅRSTID Lamps (Both)
             icon: mdi:lamps
             color: amber
             features:
@@ -28,10 +48,10 @@ views:
             grid_options:
               columns: full
 
-          # Individual Left & Right ÅRSTID Bedside Lamps
+          # Left: ÅRSTID Bedside | Right: ÅRSTID Desk
           - type: tile
-            entity: light.kajplats_e27_ws_globe_1055lm
-            name: Bedside Lamp 1
+            entity: light.kajplats_e27_ws_globe_1055lm_2
+            name: ÅRSTID Bedside
             icon: mdi:lamp
             color: amber
             features:
@@ -40,9 +60,9 @@ views:
               columns: 6
 
           - type: tile
-            entity: light.kajplats_e27_ws_globe_1055lm_2
-            name: Bedside Lamp 2
-            icon: mdi:lamp
+            entity: light.kajplats_e27_ws_globe_1055lm
+            name: ÅRSTID Desk
+            icon: mdi:desk-lamp
             color: amber
             features:
               - type: light-brightness
@@ -61,15 +81,31 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================================
-      # SECTION 2: QUICK ACTIONS & LIGHTING SCENES
-      # ========================================================================
+      # ----------------------------------------------------------------------
+      # SECTION 2: OFFICE AREA + QUICK ACTIONS & REMOTE
+      # ----------------------------------------------------------------------
       - type: grid
         cards:
           - type: heading
-            heading: Quick Actions & Scenes
+            heading: Office
             heading_style: title
-            icon: mdi:palette-swatch-outline
+            icon: mdi:desk
+
+          - type: tile
+            entity: light.office_kajplats_e27_1521lm_office
+            name: Office Light (1521lm)
+            icon: mdi:ceiling-light
+            color: amber
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+            grid_options:
+              columns: full
+
+          - type: heading
+            heading: Quick Actions & Remote
+            heading_style: title
+            icon: mdi:lightning-bolt-outline
 
           # Master Turn Off All Apartment Lights Button
           - type: tile
@@ -82,7 +118,69 @@ views:
             grid_options:
               columns: full
 
-          # Bedroom Scenes
+          # Single Expandable Tile for the 5 ÅRSTID Scenes
+          - type: tile
+            entity: input_select.bedroom_active_scene
+            name: ÅRSTID Lighting Scenes
+            icon: mdi:palette-swatch-outline
+            color: amber
+            tap_action:
+              action: navigate
+              navigation_path: /smart-home/arstid-scenes
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+
+          # Side-by-Side (Half Width = 6 Columns each): Remote Hold Mode & Next Double-Click Scene
+          - type: tile
+            entity: input_select.bedroom_hold_mode
+            name: Remote Hold Mode
+            icon: mdi:tune-vertical
+            color: cyan
+            features:
+              - type: select-options
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: input_select.bedroom_scene_rotation
+            name: Next 2x Click Scene
+            icon: mdi:autorenew
+            color: teal
+            features:
+              - type: select-options
+            grid_options:
+              columns: 6
+
+          # Single Collapsed Tile for Server & Diagnostics (Opens Subview on Click)
+          - type: tile
+            entity: sensor.server_total_power
+            name: Host Server & Diagnostics (Tap for Details)
+            icon: mdi:server-network
+            color: blue
+            tap_action:
+              action: navigate
+              navigation_path: /smart-home/server
+            grid_options:
+              columns: full
+
+  # ==========================================================================
+  # SUBVIEW 1: ÅRSTID LIGHTING SCENES (Expanded 5-Scene View)
+  # ==========================================================================
+  - title: ÅRSTID Lighting Scenes
+    path: arstid-scenes
+    subview: true
+    type: sections
+    max_columns: 1
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: ÅRSTID Lighting Scenes
+            heading_style: title
+            icon: mdi:palette-swatch-outline
+
           - type: tile
             entity: scene.bedroom_afternoon_80_3300k
             name: Afternoon (80%, 3300K)
@@ -133,54 +231,19 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================================
-      # SECTION 3: BILRESA REMOTE & SERVER ENERGY
-      # ========================================================================
+  # ==========================================================================
+  # SUBVIEW 2: HOST SERVER & DEVICE DIAGNOSTICS (Opened on Tap)
+  # ==========================================================================
+  - title: Host Server & Diagnostics
+    path: server
+    subview: true
+    type: sections
+    max_columns: 2
+    sections:
       - type: grid
         cards:
           - type: heading
-            heading: BILRESA Remote
-            heading_style: title
-            icon: mdi:remote
-
-          - type: tile
-            entity: input_select.bedroom_hold_mode
-            name: Remote Hold Mode (I+O)
-            icon: mdi:tune-vertical
-            color: cyan
-            features:
-              - type: select-options
-            grid_options:
-              columns: full
-
-          - type: tile
-            entity: input_select.bedroom_scene_rotation
-            name: Next Double-Click Scene
-            icon: mdi:palette-swatch-outline
-            color: teal
-            features:
-              - type: select-options
-            grid_options:
-              columns: full
-
-          - type: tile
-            entity: sensor.bilresa_dual_button_battery
-            name: BILRESA Battery
-            icon: mdi:battery-high
-            color: green
-            grid_options:
-              columns: 6
-
-          - type: tile
-            entity: sensor.bilresa_dual_button_voltage
-            name: BILRESA Voltage
-            icon: mdi:flash-triangle-outline
-            color: green
-            grid_options:
-              columns: 6
-
-          - type: heading
-            heading: Host Server & Energy
+            heading: Server Power & Thermal
             heading_style: title
             icon: mdi:server-network
 
@@ -216,6 +279,14 @@ views:
             grid_options:
               columns: 6
 
+          - type: tile
+            entity: sensor.biurko_szafka_techniczna_dell_e6330_ip_address
+            name: Server Tailscale IP
+            icon: mdi:vpn
+            color: indigo
+            grid_options:
+              columns: full
+
           - type: history-graph
             title: Server Power & Temperature (24h)
             hours_to_show: 24
@@ -228,3 +299,42 @@ views:
                 name: CPU Temp (°C)
             grid_options:
               columns: full
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Device Batteries
+            heading_style: title
+            icon: mdi:battery-check-outline
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_battery
+            name: BILRESA Remote Battery
+            icon: mdi:battery-high
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.bilresa_dual_button_voltage
+            name: BILRESA Remote Voltage
+            icon: mdi:flash-triangle-outline
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_battery
+            name: Climate Sensor Battery
+            icon: mdi:battery-high
+            color: green
+            grid_options:
+              columns: 6
+
+          - type: tile
+            entity: sensor.temp_humid_sensor_battery_voltage
+            name: Climate Sensor Voltage
+            icon: mdi:flash-triangle-outline
+            color: green
+            grid_options:
+              columns: 6
