@@ -5,9 +5,15 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
-# Make our YAML dashboard the global default Overview dashboard for all devices
+# Make our YAML dashboard the global default dashboard for all devices (modern 2026 syntax)
 lovelace:
-  mode: yaml
+  dashboards:
+    lovelace:
+      mode: yaml
+      filename: ui-lovelace.yaml
+      title: Smart Home
+      icon: mdi:home-automation
+      show_in_sidebar: true
 
 automation: !include automations.yaml
 script: !include scripts.yaml
