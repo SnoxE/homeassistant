@@ -201,7 +201,7 @@ views:
             tap_action:
               action: toggle
             grid_options:
-              columns: 6
+              columns: full
 
           - type: tile
             entity: scene.bedroom_evening_50_2700k
@@ -211,7 +211,7 @@ views:
             tap_action:
               action: toggle
             grid_options:
-              columns: 6
+              columns: full
 
           - type: tile
             entity: scene.bedroom_reading_80_3500k
@@ -221,7 +221,7 @@ views:
             tap_action:
               action: toggle
             grid_options:
-              columns: 6
+              columns: full
 
           - type: tile
             entity: scene.bedroom_relax_20_2200k
@@ -231,11 +231,11 @@ views:
             tap_action:
               action: toggle
             grid_options:
-              columns: 6
+              columns: full
 
           - type: tile
             entity: scene.bedroom_night_mode_3_2200k
-            name: Night Mode (3%, 2200K)
+            name: Night Mode (ÅRSTID 3% + Floor 20%, 2200K)
             icon: mdi:weather-night
             color: indigo
             tap_action:

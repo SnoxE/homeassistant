@@ -252,7 +252,7 @@
                       data:
                         transition: 0.8
 
-        # 2. Double Click -> Night Mode on bedside lamps (3%, 2200K)
+        # 2. Double Click -> Night Mode on bedside lamps (3%, 2200K) + corner floor lamp (20% brightness, keep current color)
         - conditions:
             - condition: template
               value_template: "{{ ev_type == 'multi_press_2' }}"
@@ -263,6 +263,12 @@
               data:
                 brightness_pct: 3
                 color_temp_kelvin: 2200
+                transition: 0.5
+            - action: light.turn_on
+              target:
+                entity_id: light.sypialnia_floor_lamp_corner
+              data:
+                brightness_pct: 20
                 transition: 0.5
 
         # 3. Hold (long_press) -> Native hardware smooth ramp down (Brightness down to 2% OR Color Temp down to 2202K)
@@ -415,6 +421,12 @@
               data:
                 brightness_pct: 3
                 color_temp_kelvin: 2200
+                transition: 0.5
+            - action: light.turn_on
+              target:
+                entity_id: light.sypialnia_floor_lamp_corner
+              data:
+                brightness_pct: 20
                 transition: 0.5
   mode: restart
 

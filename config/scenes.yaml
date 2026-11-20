@@ -42,3 +42,6 @@
       state: "on"
       brightness: 8
       color_temp_kelvin: 2200
+    light.sypialnia_floor_lamp_corner:
+      state: "on"
+      brightness: 51
