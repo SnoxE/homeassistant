@@ -114,6 +114,16 @@ views:
             grid_options:
               columns: full
 
+          - type: tile
+            entity: input_select.office_scene_rotation
+            name: Office Next 2x Click Scene (Wheel)
+            icon: mdi:autorenew
+            color: teal
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+
           - type: heading
             heading: Quick Actions & Remote
             heading_style: title
@@ -321,16 +331,16 @@ views:
 
           - type: tile
             entity: sensor.bilresa_dual_button_battery
-            name: BILRESA Remote Battery
+            name: Bedroom BILRESA (2-Button) Battery
             icon: mdi:battery-high
             color: green
             grid_options:
               columns: 6
 
           - type: tile
-            entity: sensor.bilresa_dual_button_voltage
-            name: BILRESA Remote Voltage
-            icon: mdi:flash-triangle-outline
+            entity: sensor.bilresa_scroll_wheel_battery
+            name: Office BILRESA (Scroll Wheel) Battery
+            icon: mdi:battery-high
             color: green
             grid_options:
               columns: 6

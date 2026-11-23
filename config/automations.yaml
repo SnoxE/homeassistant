@@ -479,3 +479,228 @@
           - delay:
               seconds: 10
   mode: restart
+
+# ==============================================================================
+# OFFICE AUTOMATIONS - IKEA BILRESA Scroll Wheel Remote (Office Light 1521lm)
+# ==============================================================================
+# Channel 1 (1 LED dot): button_1 (Scroll Right = Brighten), button_2 (Scroll Left = Dim), button_3 (Click)
+# Channel 2 (2 LED dots): button_4 (Scroll Right = Cooler K), button_5 (Scroll Left = Warmer K), button_6 (Click)
+# Channel 3 (3 LED dots): button_9 (Click also works on Channel 3)
+
+- id: office_bilresa_scroll_wheel_click_handler
+  alias: "Office - BILRESA Scroll Wheel Click: Toggle (1x) & Scene Rotation (2x)"
+  description: "Single click on any channel: Toggle Office light | Double click: Rotate Focus (4000K, 95%) -> Afternoon (3300K, 80%) -> Evening (2500K, 40%)"
+  triggers:
+    - trigger: state
+      entity_id:
+        - event.bilresa_scroll_wheel_button_3
+        - event.bilresa_scroll_wheel_button_6
+        - event.bilresa_scroll_wheel_button_9
+      not_from:
+        - unavailable
+        - unknown
+  actions:
+    - variables:
+        ev_type: "{{ state_attr(trigger.entity_id, 'event_type') }}"
+    - choose:
+        # 1. Single Click -> Toggle Office Light On (Afternoon 80%, 3300K) / Off (0.6s fade)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_1' }}"
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.office_kajplats_e27_1521lm_office
+                  state: "on"
+              then:
+                - action: light.turn_off
+                  target:
+                    entity_id: light.office_kajplats_e27_1521lm_office
+                  data:
+                    transition: 0.6
+              else:
+                - action: input_number.set_value
+                  target:
+                    entity_id: input_number.office_wheel_brightness
+                  data:
+                    value: 80
+                - action: input_number.set_value
+                  target:
+                    entity_id: input_number.office_wheel_kelvin
+                  data:
+                    value: 3300
+                - action: light.turn_on
+                  target:
+                    entity_id: light.office_kajplats_e27_1521lm_office
+                  data:
+                    brightness_pct: 80
+                    color_temp_kelvin: 3300
+                    transition: 0.4
+
+        # 2. Double Click -> Rotate Office Scenes: Focus (4000K, 95%) -> Afternoon (3300K, 80%) -> Evening (2500K, 40%)
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_2' }}"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.office_scene_rotation
+                      state: "Focus / Work (4000K, 95%)"
+                  sequence:
+                    - action: input_number.set_value
+                      target:
+                        entity_id: input_number.office_wheel_brightness
+                      data:
+                        value: 95
+                    - action: input_number.set_value
+                      target:
+                        entity_id: input_number.office_wheel_kelvin
+                      data:
+                        value: 4000
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.office_kajplats_e27_1521lm_office
+                      data:
+                        brightness_pct: 95
+                        color_temp_kelvin: 4000
+                        transition: 0.4
+                    - action: input_select.select_option
+                      target:
+                        entity_id: input_select.office_scene_rotation
+                      data:
+                        option: "Afternoon (3300K, 80%)"
+
+                - conditions:
+                    - condition: state
+                      entity_id: input_select.office_scene_rotation
+                      state: "Afternoon (3300K, 80%)"
+                  sequence:
+                    - action: input_number.set_value
+                      target:
+                        entity_id: input_number.office_wheel_brightness
+                      data:
+                        value: 80
+                    - action: input_number.set_value
+                      target:
+                        entity_id: input_number.office_wheel_kelvin
+                      data:
+                        value: 3300
+                    - action: light.turn_on
+                      target:
+                        entity_id: light.office_kajplats_e27_1521lm_office
+                      data:
+                        brightness_pct: 80
+                        color_temp_kelvin: 3300
+                        transition: 0.4
+                    - action: input_select.select_option
+                      target:
+                        entity_id: input_select.office_scene_rotation
+                      data:
+                        option: "Evening (2500K, 40%)"
+              default:
+                - action: input_number.set_value
+                  target:
+                    entity_id: input_number.office_wheel_brightness
+                  data:
+                    value: 40
+                - action: input_number.set_value
+                  target:
+                    entity_id: input_number.office_wheel_kelvin
+                  data:
+                    value: 2500
+                - action: light.turn_on
+                  target:
+                    entity_id: light.office_kajplats_e27_1521lm_office
+                  data:
+                    brightness_pct: 40
+                    color_temp_kelvin: 2500
+                    transition: 0.4
+                - action: input_select.select_option
+                  target:
+                    entity_id: input_select.office_scene_rotation
+                  data:
+                    option: "Focus / Work (4000K, 95%)"
+  mode: restart
+
+- id: office_bilresa_scroll_wheel_brightness_handler
+  alias: "Office - BILRESA Scroll Wheel Channel 1 (1 Dot): Smooth Proportional Brightness"
+  description: "Channel 1 wheel rotation: button_1 (+5% per notch) / button_2 (-5% per notch) with fast target accumulator and proportional hardware transition"
+  triggers:
+    - trigger: state
+      entity_id:
+        - event.bilresa_scroll_wheel_button_1
+        - event.bilresa_scroll_wheel_button_2
+      not_from:
+        - unavailable
+        - unknown
+  conditions:
+    - condition: template
+      value_template: "{{ 'multi_press_' in (state_attr(trigger.entity_id, 'event_type') | string) }}"
+  actions:
+    - variables:
+        ev_type: "{{ state_attr(trigger.entity_id, 'event_type') | string }}"
+        ticks: "{{ ev_type.split('_')[-1] | int(1) }}"
+        direction: "{{ 1 if trigger.entity_id == 'event.bilresa_scroll_wheel_button_1' else -1 }}"
+        recent_spin: >-
+          {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_brightness.last_updated, 0)) < 2.5 }}
+        current_bulb_pct: >-
+          {{ ((state_attr('light.office_kajplats_e27_1521lm_office', 'brightness') | int(0)) * 100 / 255) | round(0) }}
+        base_pct: >-
+          {{ (states('input_number.office_wheel_brightness') | int(50)) if recent_spin else current_bulb_pct }}
+        new_pct: "{{ [[base_pct + (direction * ticks * 5), 100] | min, 2] | max }}"
+        trans: "{{ [[(ticks * 0.12) | round(2), 0.25] | max, 0.8] | min }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.office_wheel_brightness
+      data:
+        value: "{{ new_pct }}"
+    - action: light.turn_on
+      target:
+        entity_id: light.office_kajplats_e27_1521lm_office
+      data:
+        brightness_pct: "{{ new_pct }}"
+        transition: "{{ trans }}"
+  mode: queued
+  max: 10
+
+- id: office_bilresa_scroll_wheel_colortemp_handler
+  alias: "Office - BILRESA Scroll Wheel Channel 2 (2 Dots): Smooth Proportional Color Temp"
+  description: "Channel 2 wheel rotation: button_4 (+125K cooler per notch) / button_5 (-125K warmer per notch) with fast target accumulator and proportional hardware transition"
+  triggers:
+    - trigger: state
+      entity_id:
+        - event.bilresa_scroll_wheel_button_4
+        - event.bilresa_scroll_wheel_button_5
+      not_from:
+        - unavailable
+        - unknown
+  conditions:
+    - condition: template
+      value_template: "{{ 'multi_press_' in (state_attr(trigger.entity_id, 'event_type') | string) }}"
+  actions:
+    - variables:
+        ev_type: "{{ state_attr(trigger.entity_id, 'event_type') | string }}"
+        ticks: "{{ ev_type.split('_')[-1] | int(1) }}"
+        direction: "{{ 1 if trigger.entity_id == 'event.bilresa_scroll_wheel_button_4' else -1 }}"
+        recent_spin: >-
+          {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_kelvin.last_updated, 0)) < 2.5 }}
+        current_bulb_k: >-
+          {{ state_attr('light.office_kajplats_e27_1521lm_office', 'color_temp_kelvin') | int(3300) }}
+        base_k: >-
+          {{ (states('input_number.office_wheel_kelvin') | int(3300)) if recent_spin else current_bulb_k }}
+        new_k: "{{ [[base_k + (direction * ticks * 125), 4500] | min, 2202] | max }}"
+        trans: "{{ [[(ticks * 0.12) | round(2), 0.25] | max, 0.8] | min }}"
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.office_wheel_kelvin
+      data:
+        value: "{{ new_k }}"
+    - action: light.turn_on
+      target:
+        entity_id: light.office_kajplats_e27_1521lm_office
+      data:
+        color_temp_kelvin: "{{ new_k }}"
+        transition: "{{ trans }}"
+  mode: queued
+  max: 10

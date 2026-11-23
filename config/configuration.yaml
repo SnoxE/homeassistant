@@ -49,6 +49,33 @@ input_select:
     initial: "Afternoon (80%, 3300K)"
     icon: mdi:palette-swatch-outline
 
+  office_scene_rotation:
+    name: "Office - Scene Rotation"
+    options:
+      - "Focus / Work (4000K, 95%)"
+      - "Afternoon (3300K, 80%)"
+      - "Evening (2500K, 40%)"
+    initial: "Focus / Work (4000K, 95%)"
+    icon: mdi:desk-lamp
+
+# Fast local target accumulators for smooth consecutive BILRESA Scroll Wheel spins
+input_number:
+  office_wheel_brightness:
+    name: "Office Wheel Target Brightness"
+    min: 2
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    icon: mdi:brightness-6
+
+  office_wheel_kelvin:
+    name: "Office Wheel Target Color Temp"
+    min: 2202
+    max: 4500
+    step: 1
+    unit_of_measurement: "K"
+    icon: mdi:thermometer-lines
+
 # Sunrise Wake-Up Alarm Helpers
 input_boolean:
   bedroom_wake_up_enabled:
