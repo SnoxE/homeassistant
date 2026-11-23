@@ -116,9 +116,9 @@ views:
 
           - type: tile
             entity: input_select.office_scene_rotation
-            name: Office Next 2x Click Scene (Wheel)
-            icon: mdi:autorenew
-            color: teal
+            name: Office Lighting Scenes
+            icon: mdi:palette-swatch-outline
+            color: amber
             features:
               - type: select-options
             grid_options:
