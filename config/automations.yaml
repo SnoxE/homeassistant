@@ -223,23 +223,9 @@
   actions:
     - variables:
         ev_type: "{{ state_attr('event.bilresa_dual_button_button_2', 'event_type') }}"
-        is_third_click_after_double: >-
-          {{ trigger.from_state is not none
-             and trigger.from_state.attributes.get('event_type') == 'multi_press_2'
-             and (as_timestamp(now()) - as_timestamp(trigger.from_state.state, 0)) < 1.3 }}
     - choose:
-        # 0. Triple Click (multi_press_2 followed within 1.3s by 3rd click) -> Turn Off ALL Lights in Entire Apartment
-        - conditions:
-            - condition: template
-              value_template: "{{ is_third_click_after_double and ev_type in ['multi_press_1', 'multi_press_2'] }}"
-          sequence:
-            - action: light.turn_off
-              target:
-                entity_id: all
-              data:
-                transition: 0.8
-
-        # 1. Single Click -> Suppress if simultaneous I+O combo (within 350ms); otherwise Turn Off bedside lamps (0.8s)
+        # 1. Single Click -> Suppress if simultaneous I+O combo (within 350ms).
+        #    Otherwise: if bedside lamps are ON -> turn them off; if bedside lamps are already OFF -> turn off ALL apartment lights!
         - conditions:
             - condition: template
               value_template: "{{ ev_type == 'multi_press_1' }}"
@@ -261,19 +247,28 @@
                     - condition: template
                       value_template: "{{ not wait.completed }}"
                   then:
-                    - action: light.turn_off
-                      target:
-                        entity_id: light.bedroom_bedside_lamps
-                      data:
-                        transition: 0.8
+                    - if:
+                        - condition: state
+                          entity_id: light.bedroom_bedside_lamps
+                          state: "on"
+                      then:
+                        - action: light.turn_off
+                          target:
+                            entity_id: light.bedroom_bedside_lamps
+                          data:
+                            transition: 0.8
+                      else:
+                        - action: light.turn_off
+                          target:
+                            entity_id: all
+                          data:
+                            transition: 0.8
 
-        # 2. Double Click -> Wait 750ms in case a 3rd click is coming; otherwise activate Night Mode (ÅRSTID 3% + Floor Lamp 20%)
+        # 2. Double Click -> Night Mode on bedside lamps (3%, 2200K) + corner floor lamp (20% brightness, keep current color)
         - conditions:
             - condition: template
               value_template: "{{ ev_type == 'multi_press_2' }}"
           sequence:
-            - delay:
-                milliseconds: 750
             - action: light.turn_on
               target:
                 entity_id: light.bedroom_bedside_lamps

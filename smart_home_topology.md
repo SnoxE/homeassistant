@@ -106,9 +106,8 @@ Dedicated to quick control and switching lighting scenes on the ÅRSTID bedside 
 | **Buttons "I" + "O" (Click together)** | `multi_press_1` (both within 350ms) | `input_select.bedroom_hold_mode` | Toggle **Hold Mode** between **Brightness** and **Color Temperature (`2202K–4500K`)** (with brief visual pulse confirmation) |
 | **Button "I" (Double click)** | `multi_press_2` | `light.bedroom_bedside_lamps` | Scene rotation: **Evening** (`2700K`, `50%`) $\rightarrow$ **Reading** (`3500K`, `80%`) $\rightarrow$ **Relax** (`2200K`, `20%`) |
 | **Button "I" (Hold)** | `long_press` $\rightarrow$ `long_release` | `light.bedroom_bedside_lamps` | Smooth hardware ramp up: **Brighten to `100%`** (in Brightness mode) OR **Cooler white to `4500K`** (in Color Temp mode); freezes on release |
-| **Button "O" (Single click)** | `multi_press_1` | `light.bedroom_bedside_lamps` | Turn off bedside lamps (`transition: 0.8s`) |
+| **Button "O" (Single click)** | `multi_press_1` | `light.bedroom_bedside_lamps` / `all` | If bedside lamps are ON: turn off bedside lamps (`0.8s`). If bedside lamps are already OFF: turn off **ALL lights in the entire apartment** (`0.8s`) |
 | **Button "O" (Double click)** | `multi_press_2` | `light.bedroom_bedside_lamps` + `light.sypialnia_floor_lamp_corner` | Night mode: bedside lamps (`3%`, `2200K`) + corner floor lamp (`20%`, keep color) |
-| **Button "O" (Triple click)** | `multi_press_2` + `multi_press_1` (< 1.3s) | `all` (All apartment lights) | Turn off **all lights in the entire apartment** (`transition: 0.8s`) |
 | **Button "O" (Hold)** | `long_press` $\rightarrow$ `long_release` | `light.bedroom_bedside_lamps` | Smooth hardware ramp down: **Dim to `2%`** (in Brightness mode) OR **Warmer amber to `2202K`** (in Color Temp mode); freezes on release |
 
 ---
