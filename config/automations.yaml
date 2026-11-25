@@ -223,7 +223,22 @@
   actions:
     - variables:
         ev_type: "{{ state_attr('event.bilresa_dual_button_button_2', 'event_type') }}"
+        is_third_click_after_double: >-
+          {{ trigger.from_state is not none
+             and trigger.from_state.attributes.get('event_type') == 'multi_press_2'
+             and (as_timestamp(now()) - as_timestamp(trigger.from_state.state, 0)) < 1.3 }}
     - choose:
+        # 0. Triple Click (multi_press_2 followed within 1.3s by 3rd click) -> Turn Off ALL Lights in Entire Apartment
+        - conditions:
+            - condition: template
+              value_template: "{{ is_third_click_after_double and ev_type in ['multi_press_1', 'multi_press_2'] }}"
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: all
+              data:
+                transition: 0.8
+
         # 1. Single Click -> Suppress if simultaneous I+O combo (within 350ms); otherwise Turn Off bedside lamps (0.8s)
         - conditions:
             - condition: template
@@ -252,11 +267,13 @@
                       data:
                         transition: 0.8
 
-        # 2. Double Click -> Night Mode on bedside lamps (3%, 2200K) + corner floor lamp (20% brightness, keep current color)
+        # 2. Double Click -> Wait 750ms in case a 3rd click is coming; otherwise activate Night Mode (ÅRSTID 3% + Floor Lamp 20%)
         - conditions:
             - condition: template
               value_template: "{{ ev_type == 'multi_press_2' }}"
           sequence:
+            - delay:
+                milliseconds: 750
             - action: light.turn_on
               target:
                 entity_id: light.bedroom_bedside_lamps
@@ -547,6 +564,17 @@
                 entity_id: input_select.office_scene_rotation
               data:
                 cycle: true
+
+        # 3. Triple Click -> Turn Off ALL Lights in Entire Apartment
+        - conditions:
+            - condition: template
+              value_template: "{{ ev_type == 'multi_press_3' }}"
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: all
+              data:
+                transition: 0.8
   mode: restart
 
 - id: office_active_scene_dropdown_handler
@@ -628,19 +656,19 @@
   mode: restart
 
 - id: office_bilresa_scroll_wheel_brightness_handler
-  alias: "Office - BILRESA Scroll Wheel Channel 1 (1 Dot): Hybrid Instant + Proportional Brightness"
-  description: "Pure YAML Hybrid Engine: current_switch_position_1/2 triggers instant 1st notch (±5% in ~150ms), while button_1/2 multi_press_2..8 applies remaining notches on fast spins"
+  alias: "Office - BILRESA Scroll Wheel Channel 1 (1 Dot): Predictive Hardware Ramp + Notch Lock"
+  description: "Pure YAML: Immediately starts a smooth 24%/s hardware ramp the moment current_switch_position_1/2 turns to 1 (so the light glides live while turning), then locks onto the exact notch count (ticks * 6%) when multi_press_1..8 arrives"
   triggers:
-    # Instant trigger (~150ms) the moment the wheel starts turning
+    # 1. Instant start-of-turn trigger (~150ms): starts smooth hardware ramp while finger is turning
     - trigger: state
-      id: instant_right
+      id: ramp_right
       entity_id: sensor.bilresa_scroll_wheel_current_switch_position_1
       to: "1"
     - trigger: state
-      id: instant_left
+      id: ramp_left
       entity_id: sensor.bilresa_scroll_wheel_current_switch_position_2
       to: "1"
-    # Multi-notch catch-up trigger when spinning 2..8 notches in one motion
+    # 2. Direct fallback trigger in case current_switch_position was already 1
     - trigger: state
       id: batch_right
       entity_id: event.bilresa_scroll_wheel_button_1
@@ -655,58 +683,86 @@
         - unknown
   actions:
     - variables:
-        is_instant: "{{ trigger.id in ['instant_right', 'instant_left'] }}"
-        direction: "{{ 1 if trigger.id in ['instant_right', 'batch_right'] else -1 }}"
-        ev_type: "{{ (state_attr(trigger.entity_id, 'event_type') | string) if not is_instant else 'instant' }}"
-        raw_ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
-        # If current_switch_position_1/2 is enabled, it already applied 1 notch instantly, so batch only applies (raw_ticks - 1).
-        # If current_switch_position_1/2 is still disabled, fallback to full raw_ticks so it always works!
-        pos_sensor: >-
-          {{ 'sensor.bilresa_scroll_wheel_current_switch_position_1' if direction == 1 else 'sensor.bilresa_scroll_wheel_current_switch_position_2' }}
-        pos_enabled: "{{ states(pos_sensor) not in ['unavailable', 'unknown'] }}"
-        effective_ticks: >-
-          {{ 1 if is_instant else ((raw_ticks - 1) if pos_enabled else raw_ticks) }}
-    - if:
-        - condition: template
-          value_template: "{{ effective_ticks > 0 }}"
-      then:
+        is_ramp_start: "{{ trigger.id in ['ramp_right', 'ramp_left'] }}"
+        direction: "{{ 1 if trigger.id in ['ramp_right', 'batch_right'] else -1 }}"
+        recent_spin: >-
+          {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_brightness.last_updated, 0)) < 2.0 }}
+        current_bulb_pct: >-
+          {{ ((state_attr('light.office_kajplats_e27_1521lm_office', 'brightness') | int(0)) * 100 / 255) | round(0) }}
+        start_pct: >-
+          {{ (states('input_number.office_wheel_brightness') | int(50)) if recent_spin else current_bulb_pct }}
+    - choose:
+        # Case A: Wheel just started turning -> immediately start smooth hardware ramp (24%/s) and wait for final notch count
+        - conditions:
+            - condition: template
+              value_template: "{{ is_ramp_start }}"
+          sequence:
+            - variables:
+                limit_pct: "{{ 100 if direction == 1 else 2 }}"
+                ramp_duration: "{{ [(((limit_pct - start_pct) | abs) / 24.0) | round(2), 0.3] | max }}"
+                ev_entity: >-
+                  {{ 'event.bilresa_scroll_wheel_button_1' if direction == 1 else 'event.bilresa_scroll_wheel_button_2' }}
+            - action: light.turn_on
+              target:
+                entity_id: light.office_kajplats_e27_1521lm_office
+              data:
+                brightness_pct: "{{ limit_pct }}"
+                transition: "{{ ramp_duration }}"
+            - wait_for_trigger:
+                - trigger: state
+                  entity_id:
+                    - event.bilresa_scroll_wheel_button_1
+                    - event.bilresa_scroll_wheel_button_2
+              timeout:
+                milliseconds: 2000
+            - variables:
+                ev_type: "{{ (state_attr(ev_entity, 'event_type') | string) if wait.completed else 'multi_press_1' }}"
+                ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
+                final_pct: "{{ [[start_pct + (direction * ticks * 6), 100] | min, 2] | max }}"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.office_wheel_brightness
+              data:
+                value: "{{ final_pct }}"
+            - action: light.turn_on
+              target:
+                entity_id: light.office_kajplats_e27_1521lm_office
+              data:
+                brightness_pct: "{{ final_pct }}"
+                transition: 0.25
+
+      # Case B: multi_press_N arrived without a prior ramp_start
+      default:
         - variables:
-            recent_spin: >-
-              {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_brightness.last_updated, 0)) < 2.5 }}
-            current_bulb_pct: >-
-              {{ ((state_attr('light.office_kajplats_e27_1521lm_office', 'brightness') | int(0)) * 100 / 255) | round(0) }}
-            base_pct: >-
-              {{ (states('input_number.office_wheel_brightness') | int(50)) if recent_spin else current_bulb_pct }}
-            new_pct: "{{ [[base_pct + (direction * effective_ticks * 5), 100] | min, 2] | max }}"
-            trans: "{{ 0.18 if is_instant else ([[(effective_ticks * 0.12) | round(2), 0.22] | max, 0.7] | min) }}"
+            ev_type: "{{ state_attr(trigger.entity_id, 'event_type') | string }}"
+            ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
+            final_pct: "{{ [[start_pct + (direction * ticks * 6), 100] | min, 2] | max }}"
+            trans: "{{ [[(ticks * 0.12) | round(2), 0.25] | max, 0.7] | min }}"
         - action: input_number.set_value
           target:
             entity_id: input_number.office_wheel_brightness
           data:
-            value: "{{ new_pct }}"
+            value: "{{ final_pct }}"
         - action: light.turn_on
           target:
             entity_id: light.office_kajplats_e27_1521lm_office
           data:
-            brightness_pct: "{{ new_pct }}"
+            brightness_pct: "{{ final_pct }}"
             transition: "{{ trans }}"
-  mode: queued
-  max: 25
+  mode: restart
 
 - id: office_bilresa_scroll_wheel_colortemp_handler
-  alias: "Office - BILRESA Scroll Wheel Channel 2 (2 Dots): Hybrid Instant + Proportional Color Temp"
-  description: "Pure YAML Hybrid Engine: current_switch_position_4/5 triggers instant 1st notch (±125K in ~150ms), while button_4/5 multi_press_2..8 applies remaining notches on fast spins"
+  alias: "Office - BILRESA Scroll Wheel Channel 2 (2 Dots): Predictive Hardware Ramp + Notch Lock"
+  description: "Pure YAML: Immediately starts a smooth 600K/s hardware ramp the moment current_switch_position_4/5 turns to 1, then locks onto the exact notch count (ticks * 150K) when multi_press_1..8 arrives"
   triggers:
-    # Instant trigger (~150ms) the moment the wheel starts turning
     - trigger: state
-      id: instant_right
+      id: ramp_right
       entity_id: sensor.bilresa_scroll_wheel_current_switch_position_4
       to: "1"
     - trigger: state
-      id: instant_left
+      id: ramp_left
       entity_id: sensor.bilresa_scroll_wheel_current_switch_position_5
       to: "1"
-    # Multi-notch catch-up trigger when spinning 2..8 notches in one motion
     - trigger: state
       id: batch_right
       entity_id: event.bilresa_scroll_wheel_button_4
@@ -721,38 +777,68 @@
         - unknown
   actions:
     - variables:
-        is_instant: "{{ trigger.id in ['instant_right', 'instant_left'] }}"
-        direction: "{{ 1 if trigger.id in ['instant_right', 'batch_right'] else -1 }}"
-        ev_type: "{{ (state_attr(trigger.entity_id, 'event_type') | string) if not is_instant else 'instant' }}"
-        raw_ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
-        pos_sensor: >-
-          {{ 'sensor.bilresa_scroll_wheel_current_switch_position_4' if direction == 1 else 'sensor.bilresa_scroll_wheel_current_switch_position_5' }}
-        pos_enabled: "{{ states(pos_sensor) not in ['unavailable', 'unknown'] }}"
-        effective_ticks: >-
-          {{ 1 if is_instant else ((raw_ticks - 1) if pos_enabled else raw_ticks) }}
-    - if:
-        - condition: template
-          value_template: "{{ effective_ticks > 0 }}"
-      then:
+        is_ramp_start: "{{ trigger.id in ['ramp_right', 'ramp_left'] }}"
+        direction: "{{ 1 if trigger.id in ['ramp_right', 'batch_right'] else -1 }}"
+        recent_spin: >-
+          {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_kelvin.last_updated, 0)) < 2.0 }}
+        current_bulb_k: >-
+          {{ state_attr('light.office_kajplats_e27_1521lm_office', 'color_temp_kelvin') | int(3300) }}
+        start_k: >-
+          {{ (states('input_number.office_wheel_kelvin') | int(3300)) if recent_spin else current_bulb_k }}
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ is_ramp_start }}"
+          sequence:
+            - variables:
+                limit_k: "{{ 4500 if direction == 1 else 2202 }}"
+                ramp_duration: "{{ [(((limit_k - start_k) | abs) / 600.0) | round(2), 0.3] | max }}"
+                ev_entity: >-
+                  {{ 'event.bilresa_scroll_wheel_button_4' if direction == 1 else 'event.bilresa_scroll_wheel_button_5' }}
+            - action: light.turn_on
+              target:
+                entity_id: light.office_kajplats_e27_1521lm_office
+              data:
+                color_temp_kelvin: "{{ limit_k }}"
+                transition: "{{ ramp_duration }}"
+            - wait_for_trigger:
+                - trigger: state
+                  entity_id:
+                    - event.bilresa_scroll_wheel_button_4
+                    - event.bilresa_scroll_wheel_button_5
+              timeout:
+                milliseconds: 2000
+            - variables:
+                ev_type: "{{ (state_attr(ev_entity, 'event_type') | string) if wait.completed else 'multi_press_1' }}"
+                ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
+                final_k: "{{ [[start_k + (direction * ticks * 150), 4500] | min, 2202] | max }}"
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.office_wheel_kelvin
+              data:
+                value: "{{ final_k }}"
+            - action: light.turn_on
+              target:
+                entity_id: light.office_kajplats_e27_1521lm_office
+              data:
+                color_temp_kelvin: "{{ final_k }}"
+                transition: 0.25
+
+      default:
         - variables:
-            recent_spin: >-
-              {{ (as_timestamp(now()) - as_timestamp(states.input_number.office_wheel_kelvin.last_updated, 0)) < 2.5 }}
-            current_bulb_k: >-
-              {{ state_attr('light.office_kajplats_e27_1521lm_office', 'color_temp_kelvin') | int(3300) }}
-            base_k: >-
-              {{ (states('input_number.office_wheel_kelvin') | int(3300)) if recent_spin else current_bulb_k }}
-            new_k: "{{ [[base_k + (direction * effective_ticks * 125), 4500] | min, 2202] | max }}"
-            trans: "{{ 0.18 if is_instant else ([[(effective_ticks * 0.12) | round(2), 0.22] | max, 0.7] | min) }}"
+            ev_type: "{{ state_attr(trigger.entity_id, 'event_type') | string }}"
+            ticks: "{{ (ev_type.split('_')[-1] | int(1)) if 'multi_press_' in ev_type else 1 }}"
+            final_k: "{{ [[start_k + (direction * ticks * 150), 4500] | min, 2202] | max }}"
+            trans: "{{ [[(ticks * 0.12) | round(2), 0.25] | max, 0.7] | min }}"
         - action: input_number.set_value
           target:
             entity_id: input_number.office_wheel_kelvin
           data:
-            value: "{{ new_k }}"
+            value: "{{ final_k }}"
         - action: light.turn_on
           target:
             entity_id: light.office_kajplats_e27_1521lm_office
           data:
-            color_temp_kelvin: "{{ new_k }}"
+            color_temp_kelvin: "{{ final_k }}"
             transition: "{{ trans }}"
-  mode: queued
-  max: 25
+  mode: restart
